@@ -50,18 +50,27 @@ def generate(
             results = openai.Moderation.create([instruction, edited_caption])["results"]
             if results[0]["flagged"] or results[1]["flagged"]:
                 continue
-            if caption.strip().strip(".!?").lower() != edited_caption.strip().strip(".!?").lower():
+            if (
+                caption.strip().strip(".!?").lower()
+                != edited_caption.strip().strip(".!?").lower()
+            ):
                 return instruction, edited_caption
 
 
-def main(openai_model: str, num_samples: int, num_partitions: int, partition: int, seed: int):
-    dataset = datasets.load_dataset("ChristophSchuhmann/improved_aesthetics_6.5plus", split="train")
+def main(
+    openai_model: str, num_samples: int, num_partitions: int, partition: int, seed: int
+):
+    dataset = datasets.load_dataset(
+        "ChristophSchuhmann/improved_aesthetics_6.5plus", split="train"
+    )
     # Other datasets we considered that may be worth trying:
     # dataset = datasets.load_dataset("ChristophSchuhmann/MS_COCO_2017_URL_TEXT", split="train")
     # dataset = datasets.load_dataset("laion/laion-coco", split="train")
 
     np.random.seed(seed)
-    permutation = np.array_split(np.random.permutation(len(dataset)), num_partitions)[partition]
+    permutation = np.array_split(np.random.permutation(len(dataset)), num_partitions)[
+        partition
+    ]
     dataset = dataset[permutation]
     captions = dataset["TEXT"]
     urls = dataset["URL"]
@@ -76,13 +85,19 @@ def main(openai_model: str, num_samples: int, num_partitions: int, partition: in
         with open(output_path, "r") as f:
             for line in tqdm(f, desc="Resuming from existing prompts"):
                 prompt = json.loads(line)
-                if prompt["caption"] not in caption_set and prompt["url"] not in url_set:
+                if (
+                    prompt["caption"] not in caption_set
+                    and prompt["url"] not in url_set
+                ):
                     caption_set.add(prompt["caption"])
                     url_set.add(prompt["url"])
                     count += 1
 
     with open(output_path, "a") as fp:
-        with tqdm(total=num_samples - count, desc="Generating instructions and edited captions") as progress_bar:
+        with tqdm(
+            total=num_samples - count,
+            desc="Generating instructions and edited captions",
+        ) as progress_bar:
             for caption, url in zip(captions, urls):
                 if caption in caption_set or url in url_set:
                     continue
@@ -91,7 +106,9 @@ def main(openai_model: str, num_samples: int, num_partitions: int, partition: in
                 edit_output = generate(openai_model, caption)
                 if edit_output is not None:
                     edit, output = edit_output
-                    fp.write(f"{json.dumps(dict(caption=caption, edit=edit, output=output, url=url))}\n")
+                    fp.write(
+                        f"{json.dumps(dict(caption=caption, edit=edit, output=output, url=url))}\n"
+                    )
                     count += 1
                     progress_bar.update()
                     caption_set.add(caption)
@@ -110,4 +127,10 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=0, type=int)
     args = parser.parse_args()
     openai.api_key = args.openai_api_key
-    main(args.openai_model, args.num_samples, args.num_partitions, args.partition, args.seed)
+    main(
+        args.openai_model,
+        args.num_samples,
+        args.num_partitions,
+        args.partition,
+        args.seed,
+    )

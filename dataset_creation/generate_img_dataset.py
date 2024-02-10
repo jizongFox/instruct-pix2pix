@@ -30,7 +30,9 @@ def append_dims(x, target_dims):
     """Appends dimensions to the end of a tensor until it has target_dims dimensions."""
     dims_to_append = target_dims - x.ndim
     if dims_to_append < 0:
-        raise ValueError(f"input has {x.ndim} dims but target_dims is {target_dims}, which is less")
+        raise ValueError(
+            f"input has {x.ndim} dims but target_dims is {target_dims}, which is less"
+        )
     return x[(...,) + (None,) * dims_to_append]
 
 
@@ -42,8 +44,11 @@ def to_d(x, sigma, denoised):
 def get_ancestral_step(sigma_from, sigma_to):
     """Calculates the noise level (sigma_down) to step down to and the amount
     of noise to add (sigma_up) when doing an ancestral sampling step."""
-    sigma_up = min(sigma_to, (sigma_to**2 * (sigma_from**2 - sigma_to**2) / sigma_from**2) ** 0.5)
-    sigma_down = (sigma_to**2 - sigma_up**2) ** 0.5
+    sigma_up = min(
+        sigma_to,
+        (sigma_to ** 2 * (sigma_from ** 2 - sigma_to ** 2) / sigma_from ** 2) ** 0.5,
+    )
+    sigma_down = (sigma_to ** 2 - sigma_up ** 2) ** 0.5
     return sigma_down, sigma_up
 
 
@@ -80,7 +85,9 @@ def load_model_from_config(config, ckpt, vae_ckpt=None, verbose=False):
         print(f"Loading VAE from {vae_ckpt}")
         vae_sd = torch.load(vae_ckpt, map_location="cpu")["state_dict"]
         sd = {
-            k: vae_sd[k[len("first_stage_model.") :]] if k.startswith("first_stage_model.") else v
+            k: vae_sd[k[len("first_stage_model.") :]]
+            if k.startswith("first_stage_model.")
+            else v
             for k, v in sd.items()
         }
     model = instantiate_from_config(config.model)
@@ -262,17 +269,34 @@ def main():
                     x = repeat(x, "1 ... -> n ...", n=2)
 
                     model_wrap_cfg = CFGDenoiser(model_wrap)
-                    p2p_threshold = opt.min_p2p + torch.rand(()).item() * (opt.max_p2p - opt.min_p2p)
-                    cfg_scale = opt.min_cfg + torch.rand(()).item() * (opt.max_cfg - opt.min_cfg)
-                    extra_args = {"cond": cond, "uncond": uncond, "cfg_scale": cfg_scale}
-                    samples_ddim = sample_euler_ancestral(model_wrap_cfg, x, sigmas, p2p_threshold, **extra_args)
+                    p2p_threshold = opt.min_p2p + torch.rand(()).item() * (
+                        opt.max_p2p - opt.min_p2p
+                    )
+                    cfg_scale = opt.min_cfg + torch.rand(()).item() * (
+                        opt.max_cfg - opt.min_cfg
+                    )
+                    extra_args = {
+                        "cond": cond,
+                        "uncond": uncond,
+                        "cfg_scale": cfg_scale,
+                    }
+                    samples_ddim = sample_euler_ancestral(
+                        model_wrap_cfg, x, sigmas, p2p_threshold, **extra_args
+                    )
                     x_samples_ddim = model.decode_first_stage(samples_ddim)
-                    x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
+                    x_samples_ddim = torch.clamp(
+                        (x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0
+                    )
 
                     x0 = x_samples_ddim[0]
                     x1 = x_samples_ddim[1]
 
-                    clip_sim_0, clip_sim_1, clip_sim_dir, clip_sim_image = clip_similarity(
+                    (
+                        clip_sim_0,
+                        clip_sim_1,
+                        clip_sim_dir,
+                        clip_sim_image,
+                    ) = clip_similarity(
                         x0[None], x1[None], [prompt["caption"]], [prompt["output"]]
                     )
 

@@ -15,7 +15,10 @@ def main():
     with tqdm(desc="Listing dataset image seeds") as progress_bar:
         for prompt_dir in dataset_dir.iterdir():
             if prompt_dir.is_dir():
-                prompt_seeds = [image_path.name.split("_")[0] for image_path in sorted(prompt_dir.glob("*_0.jpg"))]
+                prompt_seeds = [
+                    image_path.name.split("_")[0]
+                    for image_path in sorted(prompt_dir.glob("*_0.jpg"))
+                ]
                 if len(prompt_seeds) > 0:
                     seeds.append((prompt_dir.name, prompt_seeds))
                     progress_bar.update()

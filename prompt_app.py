@@ -11,7 +11,9 @@ from dataset_creation.generate_txt_dataset import generate
 
 
 def main(openai_model: str):
-    dataset = datasets.load_dataset("ChristophSchuhmann/improved_aesthetics_6.5plus", split="train")
+    dataset = datasets.load_dataset(
+        "ChristophSchuhmann/improved_aesthetics_6.5plus", split="train"
+    )
     captions = dataset[np.random.permutation(len(dataset))]["TEXT"]
     index = 0
 
@@ -39,9 +41,15 @@ def main(openai_model: str):
             random_btn = gr.Button("Random Input")
             generate_btn = gr.Button("Generate Instruction + Edited Caption")
 
-            clear_btn.click(fn=lambda: ("", "", ""), inputs=[], outputs=[txt_input, txt_edit, txt_output])
+            clear_btn.click(
+                fn=lambda: ("", "", ""),
+                inputs=[],
+                outputs=[txt_input, txt_edit, txt_output],
+            )
             random_btn.click(fn=click_random, inputs=[], outputs=[txt_input])
-            generate_btn.click(fn=click_generate, inputs=[txt_input], outputs=[txt_edit, txt_output])
+            generate_btn.click(
+                fn=click_generate, inputs=[txt_input], outputs=[txt_edit, txt_output]
+            )
 
     demo.launch(share=True)
 

@@ -29,11 +29,29 @@ class CFGDenoiser(nn.Module):
         cfg_z = einops.repeat(z, "1 ... -> n ...", n=3)
         cfg_sigma = einops.repeat(sigma, "1 ... -> n ...", n=3)
         cfg_cond = {
-            "c_crossattn": [torch.cat([cond["c_crossattn"][0], uncond["c_crossattn"][0], uncond["c_crossattn"][0]])],
-            "c_concat": [torch.cat([cond["c_concat"][0], cond["c_concat"][0], uncond["c_concat"][0]])],
+            "c_crossattn": [
+                torch.cat(
+                    [
+                        cond["c_crossattn"][0],
+                        uncond["c_crossattn"][0],
+                        uncond["c_crossattn"][0],
+                    ]
+                )
+            ],
+            "c_concat": [
+                torch.cat(
+                    [cond["c_concat"][0], cond["c_concat"][0], uncond["c_concat"][0]]
+                )
+            ],
         }
-        out_cond, out_img_cond, out_uncond = self.inner_model(cfg_z, cfg_sigma, cond=cfg_cond).chunk(3)
-        return out_uncond + text_cfg_scale * (out_cond - out_img_cond) + image_cfg_scale * (out_img_cond - out_uncond)
+        out_cond, out_img_cond, out_uncond = self.inner_model(
+            cfg_z, cfg_sigma, cond=cfg_cond
+        ).chunk(3)
+        return (
+            out_uncond
+            + text_cfg_scale * (out_cond - out_img_cond)
+            + image_cfg_scale * (out_img_cond - out_uncond)
+        )
 
 
 def load_model_from_config(config, ckpt, vae_ckpt=None, verbose=False):
@@ -46,7 +64,9 @@ def load_model_from_config(config, ckpt, vae_ckpt=None, verbose=False):
         print(f"Loading VAE from {vae_ckpt}")
         vae_sd = torch.load(vae_ckpt, map_location="cpu")["state_dict"]
         sd = {
-            k: vae_sd[k[len("first_stage_model.") :]] if k.startswith("first_stage_model.") else v
+            k: vae_sd[k[len("first_stage_model.") :]]
+            if k.startswith("first_stage_model.")
+            else v
             for k, v in sd.items()
         }
     model = instantiate_from_config(config.model)
@@ -65,7 +85,9 @@ def main():
     parser.add_argument("--resolution", default=512, type=int)
     parser.add_argument("--steps", default=100, type=int)
     parser.add_argument("--config", default="configs/generate.yaml", type=str)
-    parser.add_argument("--ckpt", default="checkpoints/instruct-pix2pix-00-22000.ckpt", type=str)
+    parser.add_argument(
+        "--ckpt", default="checkpoints/instruct-pix2pix-00-22000.ckpt", type=str
+    )
     parser.add_argument("--vae-ckpt", default=None, type=str)
     parser.add_argument("--input", required=True, type=str)
     parser.add_argument("--output", required=True, type=str)
@@ -89,7 +111,9 @@ def main():
     factor = math.ceil(min(width, height) * factor / 64) * 64 / min(width, height)
     width = int((width * factor) // 64) * 64
     height = int((height * factor) // 64) * 64
-    input_image = ImageOps.fit(input_image, (width, height), method=Image.Resampling.LANCZOS)
+    input_image = ImageOps.fit(
+        input_image, (width, height), method=Image.Resampling.LANCZOS
+    )
 
     if args.edit == "":
         input_image.save(args.output)
@@ -116,7 +140,9 @@ def main():
         }
         torch.manual_seed(seed)
         z = torch.randn_like(cond["c_concat"][0]) * sigmas[0]
-        z = K.sampling.sample_euler_ancestral(model_wrap_cfg, z, sigmas, extra_args=extra_args)
+        z = K.sampling.sample_euler_ancestral(
+            model_wrap_cfg, z, sigmas, extra_args=extra_args
+        )
         x = model.decode_first_stage(z)
         x = torch.clamp((x + 1.0) / 2.0, min=0.0, max=1.0)
         x = 255.0 * rearrange(x, "1 c h w -> h w c")

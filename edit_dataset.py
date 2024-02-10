@@ -58,12 +58,18 @@ class EditDataset(Dataset):
         image_0 = Image.open(propt_dir.joinpath(f"{seed}_0.jpg"))
         image_1 = Image.open(propt_dir.joinpath(f"{seed}_1.jpg"))
 
-        reize_res = torch.randint(self.min_resize_res, self.max_resize_res + 1, ()).item()
+        reize_res = torch.randint(
+            self.min_resize_res, self.max_resize_res + 1, ()
+        ).item()
         image_0 = image_0.resize((reize_res, reize_res), Image.Resampling.LANCZOS)
         image_1 = image_1.resize((reize_res, reize_res), Image.Resampling.LANCZOS)
 
-        image_0 = rearrange(2 * torch.tensor(np.array(image_0)).float() / 255 - 1, "h w c -> c h w")
-        image_1 = rearrange(2 * torch.tensor(np.array(image_1)).float() / 255 - 1, "h w c -> c h w")
+        image_0 = rearrange(
+            2 * torch.tensor(np.array(image_0)).float() / 255 - 1, "h w c -> c h w"
+        )
+        image_1 = rearrange(
+            2 * torch.tensor(np.array(image_1)).float() / 255 - 1, "h w c -> c h w"
+        )
 
         crop = torchvision.transforms.RandomCrop(self.crop_res)
         flip = torchvision.transforms.RandomHorizontalFlip(float(self.flip_prob))
@@ -116,6 +122,13 @@ class EditDatasetEval(Dataset):
         reize_res = torch.randint(self.res, self.res + 1, ()).item()
         image_0 = image_0.resize((reize_res, reize_res), Image.Resampling.LANCZOS)
 
-        image_0 = rearrange(2 * torch.tensor(np.array(image_0)).float() / 255 - 1, "h w c -> c h w")
+        image_0 = rearrange(
+            2 * torch.tensor(np.array(image_0)).float() / 255 - 1, "h w c -> c h w"
+        )
 
-        return dict(image_0=image_0, input_prompt=input_prompt, edit=edit, output_prompt=output_prompt)
+        return dict(
+            image_0=image_0,
+            input_prompt=input_prompt,
+            edit=edit,
+            output_prompt=output_prompt,
+        )
